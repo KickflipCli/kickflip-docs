@@ -25,18 +25,21 @@ function relativeUrl(string $url): string
 }
 
 
-function isActive(PageInterface $page, string $path): bool
+function isActive(PageInterface $currentPage, string $navItemUrl): bool
 {
-    return Str::endsWith(KickflipHelper::trimPath($page->getUrl()), KickflipHelper::trimPath($path));
+    return Str::endsWith(KickflipHelper::trimPath($currentPage->getUrl()), KickflipHelper::trimPath(parse_url($navItemUrl, PHP_URL_PATH) ?? ''));
 }
 
 function isActiveParent(PageInterface $page, NavItem $menuItem): bool
 {
     $pageUrl = $page->getUrl();
     if ($menuItem->hasChildren()) {
-        return collect($menuItem->children)->contains(function ($child) use ($pageUrl) {
-            return KickflipHelper::trimPath($pageUrl) == KickflipHelper::trimPath($child->url);
-        });
+        return collect($menuItem->children)
+            ->filter(static fn($value) => !str_starts_with($value->url, '#')) // Remove Anchor links
+            ->map(static fn($value) => parse_url($value->url, PHP_URL_PATH)) // Map every URL to just paths...
+            ->contains(function ($childUrl) use ($pageUrl) {
+                return KickflipHelper::trimPath($pageUrl) === KickflipHelper::trimPath($childUrl);
+            });
     }
 
     return false;
@@ -71,16 +74,12 @@ function getDocUrl(string $routeName, ?string $anchorLink = null): string
         return '#link-error';
     }
 
-    if ((null !== $anchorLink) && Str::contains(file_get_contents($routePagePath), sprintf('{#%s}', ltrim($anchorLink, '#')))) {
-        if (KickflipHelper::config('prettyUrls')) {
-            return sprintf('/docs/%s#%s', $routeName, ltrim($anchorLink, '#'));
-        }
-        return sprintf('/docs/%s.html#%s', $routeName, ltrim($anchorLink, '#'));
+    if (
+        null !== $anchorLink &&
+        Str::contains(file_get_contents($routePagePath), sprintf('{#%s}', ltrim($anchorLink, '#')))
+    ) {
+        return sprintf('%s#%s', route('docs.'.$routeName), ltrim($anchorLink, '#'));
     }
 
-    if (KickflipHelper::config('prettyUrls')) {
-        return sprintf('/docs/%s', $routeName);
-    }
-
-    return sprintf('/docs/%s.html', $routeName);
+    return route('docs.'.$routeName);
 }
