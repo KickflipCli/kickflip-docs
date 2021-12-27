@@ -1,7 +1,9 @@
 <?php
 
+use KickflipDocs\View\Markdown\TableOfContentsExtension;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
-use League\CommonMark\Extension\FrontMatter\FrontMatterExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkProcessor;
 
 return [
     'code_highlighting' => [
@@ -23,7 +25,7 @@ return [
     /*
      * When enabled, anchor links will be added to all titles
      */
-    'add_anchors_to_headings' => true,
+    'add_anchors_to_headings' => false,
 
     /*
      * These options will be passed to the league/commonmark package which is
@@ -31,7 +33,13 @@ return [
      *
      * More info: https://spatie.be/docs/laravel-markdown/v1/using-the-blade-component/passing-options-to-commonmark
      */
-    'commonmark_options' => [],
+    'commonmark_options' => [
+        'heading_permalink' => [
+            'insert' => HeadingPermalinkProcessor::INSERT_AFTER,
+            'id_prefix' => 'heading',
+            'fragment_prefix' => 'heading',
+        ],
+    ],
 
     /*
      * Rendering markdown to HTML can be resource intensive. By default
@@ -61,6 +69,8 @@ return [
      */
     'extensions' => [
         AttributesExtension::class,
+        HeadingPermalinkExtension::class,
+        TableOfContentsExtension::class,
     ],
 
     /*
